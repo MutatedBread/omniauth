@@ -9,7 +9,6 @@ includes:
 requires:
   - omniauth
   - omniauth/auth_hash
-  - omniauth/authenticity_token_protection
   - omniauth/builder
   - omniauth/failure_endpoint
   - omniauth/form
