@@ -2016,31 +2016,27 @@ describe OmniAuth::Strategy do
       end
     end
 
-    context 'authenticity validation' do
+    context 'request validation' do
       let(:app) { lambda { |_env| [200, {}, ['reached our target']] } }
       let(:strategy) { ExampleStrategy.new(app, :request_path => '/auth/test') }
       before do
-        OmniAuth.config.request_validation_phase = OmniAuth::AuthenticityTokenProtection
+        OmniAuth.config.request_validation_phase = lambda { |env| raise OmniAuth::AuthenticityError.new('Forbidden') unless env['rack.session']['valid'] }
       end
 
       context 'with default POST only request methods' do
-        let!(:csrf_token) { SecureRandom.base64(32) }
-        let(:escaped_token) { URI.encode_www_form_component(csrf_token, Encoding::UTF_8) }
-
-        it 'allows a request with matching authenticity_token' do
+        it 'allows a request the validation phase accepts' do
           expect(strategy).to receive(:fail!).with('Request Phase', kind_of(StandardError))
 
-          post_env = make_env('/auth/test', 'rack.session' => {:csrf => csrf_token}, 'rack.input' => StringIO.new("authenticity_token=#{escaped_token}"))
-          strategy.call(post_env)
+          strategy.call(make_env('/auth/test', 'rack.session' => {'valid' => true}))
         end
 
-        it 'does not allow a request without a matching authenticity token' do
-          post_env = make_env('/auth/test', 'rack.input' => StringIO.new("authenticity_token=#{escaped_token}"))
+        it 'does not allow a request the validation phase rejects' do
+          post_env = make_env('/auth/test')
           expect(strategy.call(post_env)[0]).to eq(302)
           expect(strategy.call(post_env)[2]).to eq(['302 Moved'])
         end
 
-        it 'does not overwrite omniauth.params when the authenticity token is invalid' do
+        it 'does not overwrite omniauth.params when the request is rejected' do
           session = {'omniauth.params' => {'legit' => '1'}}
           post_env = make_env('/auth/test', 'QUERY_STRING' => 'evil=1', 'rack.session' => session)
 
@@ -2048,7 +2044,7 @@ describe OmniAuth::Strategy do
           expect(session['omniauth.params']).to eq('legit' => '1')
         end
 
-        it 'does not overwrite omniauth.params in test mode when the authenticity token is invalid' do
+        it 'does not overwrite omniauth.params in test mode when the request is rejected' do
           OmniAuth.config.test_mode = true
           session = {'omniauth.params' => {'legit' => '1'}}
           post_env = make_env('/auth/test', 'QUERY_STRING' => 'evil=1', 'rack.session' => session)
@@ -2069,7 +2065,9 @@ describe OmniAuth::Strategy do
           OmniAuth.config.allowed_request_methods = %i[post get]
         end
 
-        it 'allows a request without authenticity token' do
+        before { OmniAuth.config.request_validation_phase = nil }
+
+        it 'runs the request phase' do
           expect(strategy).to receive(:fail!).with('Request Phase', kind_of(StandardError))
 
           strategy.call(get_env)
@@ -2112,19 +2110,6 @@ describe OmniAuth::Strategy do
         end
       end
 
-      context 'with custom allow_if proc' do
-        before do
-          OmniAuth.config.request_validation_phase = OmniAuth::AuthenticityTokenProtection.new(:allow_if => ->(_env) { true })
-        end
-
-        it 'allows a valid request' do
-          expect(strategy).to receive(:fail!).with('Request Phase', kind_of(StandardError))
-
-          post_env = make_env('/auth/test')
-          strategy.call(post_env)
-        end
-      end
-
       after do
         OmniAuth.config.request_validation_phase = nil
       end
@@ -2148,8 +2133,7 @@ describe OmniAuth::Strategy do
 
       before do
         OmniAuth.config.test_mode = true
-        OmniAuth.config.request_validation_phase = OmniAuth::AuthenticityTokenProtection
-        allow(OmniAuth::AuthenticityTokenProtection).to receive(:call).and_raise(OmniAuth::AuthenticityError)
+        OmniAuth.config.request_validation_phase = lambda { |_env| raise OmniAuth::AuthenticityError }
       end
 
       it 'does not verify token' do
