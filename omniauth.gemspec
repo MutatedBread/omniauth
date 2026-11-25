@@ -8,7 +8,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'hashie', '>= 3.5.2'
   spec.add_dependency 'logger'
   spec.add_dependency 'rack', '>= 2.2.8'
-  spec.add_dependency 'rack-protection', '>= 2.2.0'
   spec.authors       = ['Erik Berlin', 'Michael Bleigh', 'Bobby McDonald', 'Tom Milewski']
   spec.description   = 'A generalized Rack framework for multiple-provider authentication.'
   spec.email         = ['sferik@gmail.com', 'michael@intridea.com', 'bobbymcwho@gmail.com', 'tmilewski@gmail.com']
