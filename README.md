@@ -105,30 +105,24 @@ authentication flow.
 
 ## Cross-Site Request Forgery (CSRF) protection
 
-OmniAuth protects the request phase (`POST /auth/:provider`) against
-[CSRF attacks](https://owasp.org/www-community/attacks/csrf) by default.
-It uses [`OmniAuth::AuthenticityTokenProtection`](./lib/omniauth/authenticity_token_protection.rb),
-a subclass of `Rack::Protection::AuthenticityToken` from the
-[rack-protection](https://rubygems.org/gems/rack-protection) gem.
+OmniAuth doesn't check the request phase (`POST /auth/:provider`) for
+[CSRF attacks](https://owasp.org/www-community/attacks/csrf) itself.
+Your app must supply that check as `request_validation_phase`, or the
+request phase is open to
+[CVE-2015-9284](https://nvd.nist.gov/vuln/detail/CVE-2015-9284).
 
-You can pass `Rack::Protection::AuthenticityToken` options to match how
-your app stores its token. For example, to work with
-[rack_csrf](https://github.com/baldowl/rack_csrf):
+The validation phase is called with the Rack env before the request
+phase runs. To reject the request, raise `OmniAuth::AuthenticityError`;
+OmniAuth then fails with `:authenticity_error` and doesn't touch
+`omniauth.params`:
 
 ```ruby
-OmniAuth::AuthenticityTokenProtection.default_options(
-  key: "csrf.token",
-  authenticity_param: "_csrf"
-)
+OmniAuth.config.request_validation_phase = lambda do |env|
+  raise OmniAuth::AuthenticityError.new('Forbidden') unless MyCsrfCheck.valid?(env)
+end
 ```
 
-`Rack::Protection::AuthenticityToken` expects Base64-encoded tokens. If
-your app handles CSRF tokens differently, use the `allow_if` option to
-implement your own check.
-
-For Rails, see [Rails (without Devise)](#rails-without-devise). For
-more options, see the
-[rack-protection documentation](https://www.rubydoc.info/gems/rack-protection/Rack/Protection/AuthenticityToken).
+The `authenticity_token` param is never copied into `omniauth.params`.
 
 ## Rails (without Devise)
 To get started, add the gem
@@ -146,12 +140,13 @@ Rails.application.config.middleware.use OmniAuth::Builder do
   provider :developer if Rails.env.development?
 end
 
-OmniAuth.config.request_validation_phase = OmniAuth::AuthenticityTokenProtection.new(key: :_csrf_token)
+OmniAuth.config.request_validation_phase = MyApp::OmniAuthCsrfCheck
 ```
 
-The last line makes OmniAuth check the CSRF token Rails stores in the
-session (`_csrf_token`), so the request phase uses the same token as
-your forms.
+The last line makes OmniAuth check the request phase's CSRF token with
+your app's own validator (see
+[CSRF protection](#cross-site-request-forgery-csrf-protection)), so the
+request phase uses the same token as your forms.
 
 Additional providers can be added here in the future. Next we wire it
 all up using routes, a controller and a login view.

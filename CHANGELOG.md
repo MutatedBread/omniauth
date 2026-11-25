@@ -13,6 +13,9 @@ versioned together, so those entries cover all of them.
 
 ## [Unreleased]
 
+### Removed
+- **Breaking:** the `rack-protection` dependency, and with it `OmniAuth::AuthenticityTokenProtection`. `request_validation_phase` now defaults to `nil`, so OmniAuth no longer checks the request phase's CSRF token itself: apps must set their own validator, which raises `OmniAuth::AuthenticityError` to reject a request (still sent to `on_failure` as `:authenticity_error`).
+
 ## [2.4.2] - 2026-11-18
 
 ### Added
