@@ -168,23 +168,6 @@ module OmniAuth
     end
   end
 
-  # Raises AuthenticityError unless the request has a valid CSRF token.
-  class AuthenticityTokenProtection < Rack::Protection::AuthenticityToken
-    def initialize: (?Hash[Symbol, untyped] options) -> void
-
-    def self.call: (env) -> void
-
-    def call!: (env) -> void
-
-    alias call call!
-
-    private
-
-    def deny: (env) -> bot
-
-    alias default_reaction deny
-  end
-
   class Builder < Rack::Builder
     def on_failure: () { (env) -> untyped } -> Proc
 
@@ -691,18 +674,6 @@ module OmniAuth
       def session: () -> Hash[String, untyped]
 
       def strategy: () -> Array[untyped]
-    end
-  end
-end
-
-# rack-protection doesn't ship types, so declare the classes OmniAuth's
-# signatures build on.
-module Rack
-  module Protection
-    class Base
-    end
-
-    class AuthenticityToken < Base
     end
   end
 end
