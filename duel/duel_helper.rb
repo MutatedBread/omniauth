@@ -13,7 +13,7 @@ OmniAuth.configure do |config|
   config.full_host = nil
   config.path_prefix = '/auth'
   config.allowed_request_methods = %i[post]
-  config.request_validation_phase = OmniAuth::AuthenticityTokenProtection
+  config.request_validation_phase = nil
   config.before_request_phase = nil
   config.after_request_phase = nil
   config.before_callback_phase = nil
@@ -78,14 +78,6 @@ module DuelHelper
   end
 
 module_function
-
-  # A session with a CSRF token, and a token for the request phase's form
-  # that's valid for it.
-  def csrf_session
-    session = {}
-    token = Rack::Protection::AuthenticityToken.token(session)
-    [session, token]
-  end
 
   # What a provider's callback gives AuthHash.new: the typical fields,
   # and a raw_info.

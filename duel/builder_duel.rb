@@ -8,7 +8,7 @@ setup do
       provider DuelHelper::Provider, :name => name
     end
   end
-  @session, @token = DuelHelper.csrf_session
+  @session = {}
   # The first request builds the middleware stack, which is then reused.
   @app.call(DuelHelper.env_for('/', 'rack.session' => {}))
 end
@@ -19,7 +19,7 @@ duel 'builder: pass through five providers' do
 end
 
 duel 'builder: request phase of the fifth provider' do |n|
-  once { @env = DuelHelper.env_for('/auth/apple', :method => 'POST', :params => {'authenticity_token' => @token}) }
+  once { @env = DuelHelper.env_for('/auth/apple', :method => 'POST') }
   envs = untimed { DuelHelper.fresh_envs(@env, @session, n) }
   DuelHelper.call_each(@app, envs, 302)
 end
