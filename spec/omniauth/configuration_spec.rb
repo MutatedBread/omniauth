@@ -18,7 +18,7 @@ describe OmniAuth::Configuration do
         :path_prefix => '/auth',
         :on_failure => OmniAuth::FailureEndpoint,
         :failure_raise_out_environments => ['development'],
-        :request_validation_phase => OmniAuth::AuthenticityTokenProtection,
+        :request_validation_phase => nil,
         :before_request_phase => nil,
         :after_request_phase => nil,
         :allowed_hosts => nil,
